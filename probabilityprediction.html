@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Election Win Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container-max {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        header p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .card {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: none;
+            border-radius: 12px;
+            background: #fff;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h5 {
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .monos {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .small-muted {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        textarea.form-control {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 10px 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            border: none;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-danger {
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .btn-outline-danger:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .btn-outline-secondary {
+            color: #6b7280;
+            border-color: #6b7280;
+        }
+
+        .btn-outline-secondary:hover {
+            background: #6b7280;
+            color: #fff;
+        }
+
+        .form-control {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .table {
+            font-size: 12px;
+        }
+
+        .table th {
+            background: #f3f4f6;
+            color: #333;
+            font-weight: 700;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .table td {
+            vertical-align: middle;
+            color: #555;
+        }
+
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #fff;
+            font-size: 13px;
+        }
+
+        #predictionResult {
+            min-height: 50px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            padding: 10px;
+            background: #fff;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-item b {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .stat-item span {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-bottom: 20px;
+        }
+
+        @media(max-width: 768px) {
+            .row {
+                margin-bottom: 20px;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-max">
+        <header>
+            <h1>🗳 Election Win Probability Predictor</h1>
+            <p>Train a logistic regression model and predict election outcomes with comprehensive analytics</p>
+        </header>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card p-4">
+                    <h5>📊 Dataset (CSV)</h5>
+                    <textarea id="csvInput" class="form-control monos" rows="10" placeholder="Paste CSV data here...">votes_received,previous_vote_share,campaign_spending,voter_turnout,candidate_experience,party_seats_held,public_sentiment_score,ground_volunteers,won
+100000,35.5,500000,55.0,5,20,0.2,500,0
+150000,42.0,800000,62.0,10,30,0.5,800,1
+120000,38.5,600000,58.0,7,25,0.3,600,0
+180000,45.0,1000000,65.0,15,35,0.6,1000,1
+90000,30.0,400000,50.0,3,15,-0.1,400,0
+200000,48.0,1200000,68.0,20,40,0.7,1200,1
+110000,36.0,550000,57.0,8,22,0.4,550,0
+160000,43.5,900000,63.5,12,32,0.55,900,1
+95000,32.0,450000,52.0,4,18,0.15,450,0
+190000,47.0,1100000,67.0,18,38,0.65,1100,1</textarea>
+                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                        <button id="loadBtn" class="btn btn-primary flex-grow-1">🚀 Load & Train</button>
+                        <button id="downloadCsv" class="btn btn-outline-secondary">⬇ Download</button>
+                        <button id="resetModel" class="btn btn-outline-danger">🔄 Reset</button>
+                    </div>
+                    <p class="small-muted mt-2">Paste your election data in CSV format.</p>
+                </div>
+
+                <div class="card p-4 mt-4">
+                    <h5>🔮 Make a Prediction</h5>
+                    <form id="predictForm" class="row g-2">
+                        <div class="col-6"><input type="number" placeholder="votes_received" name="votes_received"
+                                class="form-control" required></div>
+                        <div class="col-6"><input type="number" step="0.1" placeholder="previous_vote_share"
+                                name="previous_vote_share" class="form-control" required></div>
+                        <div class="col-6"><input type="number" placeholder="campaign_spending" name="campaign_spending"
+                                class="form-control" required></div>
+                        <div class="col-6"><input type="number" step="0.1" placeholder="voter_turnout"
+                                name="voter_turnout" class="form-control" required></div>
+                        <div class="col-6"><input type="number" placeholder="candidate_experience"
+                                name="candidate_experience" class="form-control" required></div>
+                        <div class="col-6"><input type="number" placeholder="party_seats_held" name="party_seats_held"
+                                class="form-control" required></div>
+                        <div class="col-6"><input type="number" step="0.1" placeholder="public_sentiment_score"
+                                name="public_sentiment_score" class="form-control" required></div>
+                        <div class="col-6"><input type="number" placeholder="ground_volunteers" name="ground_volunteers"
+                                class="form-control" required></div>
+                        <div class="col-12"><button class="btn btn-success w-100" type="submit">✅ Predict Won?</button>
+                        </div>
+                    </form>
+                    <div id="predictionResult" class="mt-3"></div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card p-4">
+                    <h5>📈 Data Preview</h5>
+                    <div style="overflow-x:auto; max-height:280px; border-radius:8px; border:1px solid #e5e7eb;">
+                        <table class="table table-sm mb-0" id="dataTable"></table>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-item"><b>Training Accuracy:</b><span id="acc">-</span></div>
+                        <div class="stat-item"><b>Final Loss:</b><span id="lossVal">-</span></div>
+                    </div>
+                </div>
+
+                <div class="card p-4 mt-4">
+                    <h5>📉 Training Loss</h5>
+                    <div class="chart-container"><canvas id="lossChart"></canvas></div>
+                </div>
+
+                <div class="card p-4 mt-4">
+                    <h5>⚖️ Feature Weights</h5>
+                    <div class="chart-container"><canvas id="weightsChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card p-4">
+                    <h5>🎯 Accuracy Over Time</h5>
+                    <div class="chart-container"><canvas id="accuracyChart"></canvas></div>
+                </div>
+
+                <div class="card p-4 mt-4">
+                    <h5>🔗 Feature Correlations</h5>
+                    <div class="chart-container"><canvas id="correlationChart"></canvas></div>
+                </div>
+
+                <div class="card p-4 mt-4">
+                    <h5>📊 Prediction Distribution</h5>
+                    <div class="chart-container"><canvas id="distributionChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <footer>🌐 Logistic Regression • Advanced Analytics • Built with Chart.js</footer>
+    </div>
+
+    <script>
+        var model = null, prepared = null, charts = {};
+
+        function parseCSV(txt) {
+            var lines = txt.trim().split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length < 2) return [];
+            var headers = lines[0].split(',').map(h => h.trim());
+            return lines.slice(1).map(r => {
+                var obj = {}, cols = r.split(',').map(c => c.trim());
+                headers.forEach((h, i) => { var num = Number(cols[i]); obj[h] = isNaN(num) ? cols[i] : num; });
+                return obj;
+            });
+        }
+
+        function sigmoid(z) { return z > 500 ? 1 : z < -500 ? 0 : 1 / (1 + Math.exp(-z)); }
+
+        function normalizeColumns(X) {
+            var m = X.length, n = X[0].length, means = [], stds = [];
+            for (var j = 0; j < n; j++) {
+                var s = 0;
+                for (var i = 0; i < m; i++) s += X[i][j];
+                means[j] = s / m;
+                var ss = 0;
+                for (var i = 0; i < m; i++) ss += Math.pow(X[i][j] - means[j], 2);
+                stds[j] = Math.sqrt(ss / m) || 1;
+                for (var i = 0; i < m; i++) X[i][j] = (X[i][j] - means[j]) / stds[j];
+            }
+            return { X: X, means: means, stds: stds };
+        }
+
+        function prepareXY(data) {
+            var keys = ['votes_received', 'previous_vote_share', 'campaign_spending', 'voter_turnout', 'candidate_experience', 'party_seats_held', 'public_sentiment_score', 'ground_volunteers'];
+            var X = data.map(r => keys.map(k => r[k]));
+            var y = data.map(r => r.won);
+            var norm = normalizeColumns(X);
+            return { X: norm.X, y: y, means: norm.means, stds: norm.stds, keys: keys };
+        }
+
+        function predictProb(weights, x) {
+            var z = weights[0];
+            for (var i = 0; i < x.length; i++) z += weights[i + 1] * x[i];
+            return sigmoid(z);
+        }
+
+        function trainLogistic(X, y, opts) {
+            var lr = opts.lr || 0.1, epochs = opts.epochs || 1000;
+            var m = X.length, n = X[0].length;
+            var w = Array(n + 1).fill(0).map(() => Math.random() * 0.02 - 0.01);
+            var lossHistory = [], accuracyHistory = [];
+
+            for (var ep = 0; ep < epochs; ep++) {
+                var grads = Array(n + 1).fill(0), loss = 0, correct = 0;
+                for (var i = 0; i < m; i++) {
+                    var p = predictProb(w, X[i]), err = p - y[i];
+                    loss += -(y[i] * Math.log(Math.max(p, 1e-15)) + (1 - y[i]) * Math.log(Math.max(1 - p, 1e-15)));
+                    if ((p >= 0.5 ? 1 : 0) === y[i]) correct++;
+                    grads[0] += err;
+                    for (var j = 0; j < n; j++) grads[j + 1] += err * X[i][j];
+                }
+                for (var j = 0; j < grads.length; j++) w[j] -= (lr / m) * grads[j];
+                lossHistory.push(loss / m);
+                accuracyHistory.push(correct / m);
+            }
+            return { weights: w, lossHistory: lossHistory, accuracyHistory: accuracyHistory };
+        }
+
+        function evaluate(X, y, weights) {
+            var correct = 0, probs = [];
+            for (var i = 0; i < X.length; i++) {
+                var p = predictProb(weights, X[i]);
+                probs.push(p);
+                if ((p >= 0.5 ? 1 : 0) === y[i]) correct++;
+            }
+            return { acc: correct / X.length, probs: probs };
+        }
+
+        function calculateCorrelations(X, y, keys) {
+            var corrs = [], n = X.length;
+            for (var j = 0; j < keys.length; j++) {
+                var feat = X.map(row => row[j]);
+                var mx = feat.reduce((a, b) => a + b, 0) / n;
+                var my = y.reduce((a, b) => a + b, 0) / n;
+                var num = 0, dx = 0, dy = 0;
+                for (var i = 0; i < n; i++) {
+                    num += (feat[i] - mx) * (y[i] - my);
+                    dx += Math.pow(feat[i] - mx, 2);
+                    dy += Math.pow(y[i] - my, 2);
+                }
+                corrs.push({ feature: keys[j], correlation: num / (Math.sqrt(dx) * Math.sqrt(dy)) });
+            }
+            return corrs;
+        }
+
+        function destroyChart(name) { if (charts[name]) { charts[name].destroy(); delete charts[name]; } }
+
+        function plotLoss(data) {
+            destroyChart('loss');
+            charts.loss = new Chart(document.getElementById('lossChart'), {
+                type: 'line',
+                data: {
+                    labels: data.map((_, i) => i + 1),
+                    datasets: [{ label: 'Loss', data: data, borderColor: '#667eea', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: 'rgba(102,126,234,0.1)', pointRadius: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Epoch' } }, y: { title: { display: true, text: 'Loss' } } } }
+            });
+        }
+
+        function plotAccuracy(data) {
+            destroyChart('accuracy');
+            charts.accuracy = new Chart(document.getElementById('accuracyChart'), {
+                type: 'line',
+                data: {
+                    labels: data.map((_, i) => i + 1),
+                    datasets: [{ label: 'Accuracy', data: data.map(a => a * 100), borderColor: '#10b981', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: 'rgba(16,185,129,0.1)', pointRadius: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Epoch' } }, y: { title: { display: true, text: 'Accuracy (%)' }, min: 0, max: 100 } } }
+            });
+        }
+
+        function plotWeights(weights, keys) {
+            destroyChart('weights');
+            var labels = ['bias'].concat(keys);
+            charts.weights = new Chart(document.getElementById('weightsChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'Weight', data: weights, backgroundColor: weights.map(w => w >= 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'), borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+            });
+        }
+
+        function plotCorrelations(corrs) {
+            destroyChart('correlation');
+            var sorted = corrs.slice().sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+            charts.correlation = new Chart(document.getElementById('correlationChart'), {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(c => c.feature),
+                    datasets: [{ label: 'Correlation', data: sorted.map(c => c.correlation), backgroundColor: sorted.map(c => c.correlation >= 0 ? 'rgba(102,126,234,0.8)' : 'rgba(239,68,68,0.8)'), borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { min: -1, max: 1 } } }
+            });
+        }
+
+        function plotDistribution(probs, y) {
+            destroyChart('distribution');
+            var bins = 10, win = Array(bins).fill(0), lose = Array(bins).fill(0);
+            for (var i = 0; i < probs.length; i++) {
+                var idx = Math.min(Math.floor(probs[i] * bins), bins - 1);
+                y[i] === 1 ? win[idx]++ : lose[idx]++;
+            }
+            charts.distribution = new Chart(document.getElementById('distributionChart'), {
+                type: 'bar',
+                data: {
+                    labels: Array(bins).fill(0).map((_, i) => (i * 10) + '-' + ((i + 1) * 10) + '%'),
+                    datasets: [
+                        { label: 'Won', data: win, backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6 },
+                        { label: 'Lost', data: lose, backgroundColor: 'rgba(239,68,68,0.8)', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Probability' } }, y: { title: { display: true, text: 'Count' }, beginAtZero: true } } }
+            });
+        }
+
+        function renderTable(data) {
+            var table = document.getElementById('dataTable');
+            table.innerHTML = '';
+            if (!data || !data.length) return;
+            var headers = Object.keys(data[0]);
+            table.innerHTML = '<thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead>';
+            var tbody = document.createElement('tbody');
+            data.forEach(r => {
+                var tr = document.createElement('tr');
+                headers.forEach(h => {
+                    var td = document.createElement('td');
+                    td.textContent = typeof r[h] === 'number' ? r[h].toFixed(2) : r[h];
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+        }
+
+        function loadAndTrain() {
+            try {
+                var raw = parseCSV(document.getElementById('csvInput').value);
+                if (raw.length < 2) return alert('❌ Need at least 2 records');
+                renderTable(raw);
+                prepared = prepareXY(raw);
+                var corrs = calculateCorrelations(prepared.X, prepared.y, prepared.keys);
+                var trained = trainLogistic(prepared.X, prepared.y, { lr: 0.5, epochs: 1200 });
+                model = { weights: trained.weights, means: prepared.means, stds: prepared.stds, keys: prepared.keys };
+                var evalr = evaluate(prepared.X, prepared.y, model.weights);
+                document.getElementById('acc').textContent = (evalr.acc * 100).toFixed(2) + '%';
+                document.getElementById('lossVal').textContent = trained.lossHistory[trained.lossHistory.length - 1].toFixed(4);
+                plotLoss(trained.lossHistory);
+                plotAccuracy(trained.accuracyHistory);
+                plotWeights(model.weights, prepared.keys);
+                plotCorrelations(corrs);
+                plotDistribution(evalr.probs, prepared.y);
+            } catch (e) {
+                alert('❌ Error: ' + e.message);
+            }
+        }
+
+        function resetModel() {
+            model = null; prepared = null;
+            document.getElementById('acc').textContent = '-';
+            document.getElementById('lossVal').textContent = '-';
+            Object.keys(charts).forEach(destroyChart);
+        }
+
+        function predictFromForm(ev) {
+            ev.preventDefault();
+            if (!model) return alert('❌ Train model first');
+            var form = new FormData(ev.target);
+            var x = prepared.keys.map(k => Number(form.get(k)));
+            var normX = x.map((val, i) => (val - model.means[i]) / model.stds[i]);
+            var p = predictProb(model.weights, normX);
+            document.getElementById('predictionResult').innerHTML = '<div class="alert alert-success">✅ Prediction: <b>' + (p >= 0.5 ? 'Yes' : 'No') + '</b> (Probability: ' + (p * 100).toFixed(1) + '%)</div>';
+        }
+
+        window.addEventListener('load', function () {
+            renderTable(parseCSV(document.getElementById('csvInput').value));
+            document.getElementById('loadBtn').addEventListener('click', loadAndTrain);
+            document.getElementById('resetModel').addEventListener('click', resetModel);
+            document.getElementById('downloadCsv').addEventListener('click', () => {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([document.getElementById('csvInput').value], { type: 'text/csv' }));
+                a.download = 'election_data.csv';
+                a.click();
+            });
+            document.getElementById('predictForm').addEventListener('submit', predictFromForm);
+        });
+    </script>
+</body>
+
+</html>
